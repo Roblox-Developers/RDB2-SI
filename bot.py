@@ -30,6 +30,12 @@ async def main():
 
 if __name__ == "__main__":
     try:
+        for filename in os.listdir("./Cogs"):
+            if filename.endswith(".py"):
+                bot.load_extension(f"Cogs.{filename[:-3]}", extras={"wrapper": wrapper})
+                print(f"Successfully loaded cog {filename[:-3]}.")
+                
         asyncio.run(main())
+
     except KeyboardInterrupt:
         print("Successfully terminated bot - going offline.")

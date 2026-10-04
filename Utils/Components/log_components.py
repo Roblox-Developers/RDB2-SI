@@ -1,4 +1,4 @@
-from nextcord import Interaction, TextInputStyle
+from nextcord import Interaction, TextInputStyle, Member
 from nextcord.ext.commands import Bot
 
 from componentsv2 import (
@@ -17,26 +17,20 @@ from componentsv2 import (
 
 ## MODAL CLASSES
 class LogModal(ModalV2):
-    def __init__(self, interaction: Interaction, wrapper: Wrapper, *, accused: int = None, investigator: int = None, links: str = None):
-        default_accused = []
+    def __init__(self, interaction: Interaction, wrapper: Wrapper, *, investigator: Member = None, notes: str = None):
+        super().__init__("Create Case Log", timeout=600, custom_id="create_log")
+        self.wrapper = wrapper
+
+        investigator_id = investigator.id if investigator is not None else interaction.user.id
+
         default_investigator = []
-
-        if accused is not None:
-            default_accused.append(DefaultValue(
-                accused,
-                "user"
-            ))
-
-        if investigator is None:
-            investigator = interaction.user.id
-
         default_investigator.append(DefaultValue(
-            investigator,
+            investigator_id,
             "user"
         ))
         
-        self.accused = UserSelect("accused", default_accused, "Select a user...", required=True)
-        self.investigator = UserSelect("investigator", default_investigator, "Select a user...", required=True, max_values=10)
+        self.accused = UserSelect(custom_id="accused", placeholder="Select a user...", required=True, max_values=10)
+        self.investigator = UserSelect("investigator", default_investigator, "Select a user...", required=True)
 
         self.descriptors = StringSelect("descriptors", [
             StringSelect.SelectOption( ## add modular select options for reasons added to the guildconfig
@@ -59,7 +53,7 @@ class LogModal(ModalV2):
             TextInputStyle.paragraph, 
             max_length=2500, 
             required=False, 
-            set_value=links, 
+            set_value=notes, 
             placeholder="Add related links/give context."
         )
 
@@ -70,3 +64,6 @@ class LogModal(ModalV2):
             Label("Investigator", self.investigator),
             Label("Additional Notes", self.notes)
         )
+
+    async def on_form_submit(self, interaction: Interaction):
+        await interaction.response.send_message(f"Accused: {self.accused.values}\nDescriptors: {self.descriptors.values}\nPunishment: {self.punishment.value}\nInvestigator: {self.investigator.value}\nNotes: {self.notes.value or "NONE!"}", ephemeral=True)
